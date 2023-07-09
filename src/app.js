@@ -262,6 +262,7 @@ async function main() {
   try {
     await main();
   } finally {
+    logger.log(`测试推送！`);
     const events = recording.replay();
     const content = events.map((e) => `${e.data.join('')}`).join('  \n');
     pushServerChan('天翼云盘自动签到任务', content);
