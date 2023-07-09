@@ -240,6 +240,7 @@ const pushServerChan = (title, desp) => {
 async function main() {
   for (let index = 0; index < accounts.length; index += 1) {
     const account = accounts[index];
+    logger.log(`账号密码:${account}`);
     const { userName, password } = account;
     if (userName && password) {
       const userNameInfo = mask(userName, 3, 7);
