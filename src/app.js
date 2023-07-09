@@ -212,24 +212,26 @@ const doTask = async () => {
 };
 
 const pushServerChan = (title, desp) => {
+  logger.log(`测试推送:${serverChan.sendKey}`);
   if (!serverChan.sendKey) { return; }
   const data = {
     title,
     desp,
   };
+  logger.log(`测试推送:${serverChan.sendKey}`);
   superagent.post(`https://sctapi.ftqq.com/${serverChan.sendKey}.send`)
     .type('form')
     .send(data)
     .end((err, res) => {
       if (err) {
-        logger.error(`推送失败:${JSON.stringify(err)}`);
+        logger.log(`推送失败:${JSON.stringify(err)}`);
         return;
       }
       const json = JSON.parse(res.text);
       if (json.code !== 0) {
-        logger.error(`推送失败:${JSON.stringify(json)}`);
+        logger.log(`推送失败:${JSON.stringify(json)}`);
       } else {
-        logger.info('推送成功');
+        logger.log('推送成功');
       }
     });
 };
@@ -262,7 +264,6 @@ async function main() {
   try {
     await main();
   } finally {
-    logger.log(`测试推送！`);
     const events = recording.replay();
     const content = events.map((e) => `${e.data.join('')}`).join('  \n');
     pushServerChan('天翼云盘自动签到任务', content);
