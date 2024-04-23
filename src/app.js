@@ -23,6 +23,8 @@ const config = require('../config');
 const accounts = require('../accounts');
 const serverChan = require('../serverChan');
 const telegramBot = require('../telegramBot');
+const wecomBot = require('../wecomBot');
+const wxpush = require('../wxPusher')
 
 const client = superagent.agent();
 const headers = {
@@ -196,6 +198,7 @@ const doTask = async () => {
     'https://m.cloud.189.cn/v2/drawPrizeMarketDetails.action?taskId=TASK_2022_FLDFS_KJ&activityId=ACT_SIGNIN',
   ];
 
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const result = [];
   for (let index = 0; index < tasks.length; index += 1) {
     const task = tasks[index];
@@ -208,7 +211,8 @@ const doTask = async () => {
     } else {
       result.push(`第${index}次抽奖成功,抽奖获得${res.prizeName}`);
     }
-  }
+  await delay(5000); // 延迟5秒
+}
   return result;
 };
 
@@ -258,9 +262,61 @@ const pushTelegramBot = (title, desp) => {
     });
 };
 
+const pushWecomBot = (title, desp) => {
+  if (!(wecomBot.key && wecomBot.telphone)) { return; }
+  const data = {
+    msgtype: "text",
+    text: {
+      content: title + "\n\n" + desp,
+      mentioned_mobile_list: [wecomBot.telphone]
+    }
+  };
+  superagent.post(`https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${wecomBot.key}`)
+    .send(data)
+    .end((err, res) => {
+      if (err) {
+        logger.error(`wecomBot推送失败:${JSON.stringify(err)}`);
+        return;
+      }
+      const json = JSON.parse(res.text);
+      if (json.errcode) {
+        logger.error(`wecomBot推送失败:${JSON.stringify(json)}`);
+      } else {
+        logger.info('wecomBot推送成功');
+      }
+    });
+};
+
+const pushWxPusher = (title, desp) => {
+  if (!(wxpush.appToken && wxpush.uid)) { return; }
+  const data = {
+    appToken: wxpush.appToken,
+    contentType:1,
+    summary:title,
+    content:desp,
+    uids:[wxpush.uid]
+  };
+  superagent.post(`https://wxpusher.zjiecode.com/api/send/message`)
+  .send(data)
+  .end((err, res) => {
+    if (err) {
+      logger.error(`wxPusher推送失败:${JSON.stringify(err)}`);
+      return;
+    }
+    const json = JSON.parse(res.text);
+    if (json.data[0].code !==1000) {
+      logger.error(`wxPusher推送失败:${JSON.stringify(json)}`);
+    } else {
+      logger.info('wxPusher推送成功');
+    }
+  });
+}
+
 const push = (title, desp) => {
   pushServerChan(title, desp);
   pushTelegramBot(title, desp);
+  pushWecomBot(title, desp);
+  pushWxPusher(title, desp);
 }
 
 // 开始执行程序
